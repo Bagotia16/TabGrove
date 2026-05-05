@@ -1,0 +1,291 @@
+/* panel.css — TabGrove Side Panel Styles */
+
+/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --bg:           #0f0f13;
+  --surface:      #1a1a24;
+  --surface-2:    #22222e;
+  --surface-3:    #2a2a3a;
+  --accent:       #52c47a;        /* Forest green — matches icon */
+  --accent-dim:   #2d6a4f;
+  --accent-glow:  rgba(82, 196, 122, 0.18);
+  --danger:       #f87171;
+  --text:         #e8e6f0;
+  --text-muted:   #8a87a0;
+  --radius:       10px;
+  --radius-sm:    6px;
+  --transition:   0.2s ease;
+  --font:         'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── Reset & Base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* ─── App Shell ─────────────────────────────────────────────────────────────── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 0;
+  position: relative;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────────── */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+#header-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#logo-img {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+#header h1 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+#btn-new-category {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: var(--accent-dim);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  white-space: nowrap;
+}
+#btn-new-category:hover {
+  background: var(--accent);
+  transform: scale(1.03);
+}
+#btn-new-category span { font-size: 16px; line-height: 1; }
+
+/* ─── Category Pills ─────────────────────────────────────────────────────────── */
+#category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+.category-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition),
+              border-color var(--transition), box-shadow var(--transition);
+}
+.category-pill:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.category-pill.active {
+  background: var(--accent-glow);
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px rgba(82, 196, 122, 0.08);
+}
+
+.category-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color var(--transition), background var(--transition);
+  padding: 0;
+  margin-left: 2px;
+}
+.category-delete:hover {
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+/* ─── Tab List Section ───────────────────────────────────────────────────────── */
+#tab-list-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+}
+
+#tab-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 6px;
+  flex-shrink: 0;
+}
+
+#active-category-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+#tab-count-badge {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 2px 7px;
+  border-radius: 100px;
+}
+
+/* ─── Tab List ───────────────────────────────────────────────────────────────── */
+#tab-list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  padding: 2px 8px 8px;
+}
+
+/* Custom scrollbar */
+#tab-list::-webkit-scrollbar { width: 4px; }
+#tab-list::-webkit-scrollbar-track { background: transparent; }
+#tab-list::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 2px;
+}
+#tab-list::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  user-select: none;
+}
+.tab-item:hover {
+  background: var(--surface-2);
+  transform: translateX(3px);
+}
+.tab-item:hover .tab-close { opacity: 1; }
+
+.tab-favicon {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.tab-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 12.5px;
+}
+
+.tab-close {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 3px;
+  transition: color var(--transition), opacity var(--transition),
+              background var(--transition);
+  flex-shrink: 0;
+}
+.tab-close:hover {
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+/* ─── Empty State ────────────────────────────────────────────────────────────── */
+#empty-state {
+  padding: 24px 14px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ─── Loading Overlay ────────────────────────────────────────────────────────── */
+#loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 19, 0.82);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  z-index: 100;
+}
+#loading-overlay[hidden] { display: none; }
+
+#spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--surface-3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

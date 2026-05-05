@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TabGrove</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div id="header-logo">
+        <img src="icons/icon48.png" alt="TabGrove" id="logo-img">
+        <h1>TabGrove</h1>
+      </div>
+      <button id="btn-new-category" aria-label="Create new category">
+        <span>+</span> New Category
+      </button>
+    </header>
+
+    <!-- Category Pills -->
+    <nav id="category-list" aria-label="Tab categories"></nav>
+
+    <!-- Active Category's Tab List -->
+    <section id="tab-list-section">
+      <div id="tab-list-header">
+        <h2 id="active-category-title">—</h2>
+        <span id="tab-count-badge">0 tabs</span>
+      </div>
+      <ul id="tab-list" role="list"></ul>
+      <p id="empty-state" hidden>No tabs in this category yet.</p>
+    </section>
+
+    <!-- Loading Overlay (shown during category switch) -->
+    <div id="loading-overlay" hidden aria-live="polite" aria-label="Switching category">
+      <div id="spinner"></div>
+      <span>Switching…</span>
+    </div>
+  </div>
+
+  <script src="panel.js" type="module"></script>
+</body>
+</html>

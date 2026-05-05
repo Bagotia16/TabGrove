@@ -6,7 +6,6 @@
   "permissions": [
     "tabs",
     "storage",
-    "sessions",
     "tabGroups",
     "sidePanel",
     "alarms"

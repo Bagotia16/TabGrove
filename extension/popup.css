@@ -1,6 +1,6 @@
 /* popup.css — TabGrove Action Popup Styles */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+/* Note: Inter is used via system font stack. Cannot use @import in MV3 (CSP). */
 
 :root {
   --bg:         #0f0f13;

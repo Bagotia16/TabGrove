@@ -4,6 +4,15 @@
 // ─── State ───────────────────────────────────────────────────────────────────
 let isLoading = false;
 
+// "viewedCategory" is the category whose tabs are currently displayed in the panel.
+// It may differ from the "activeCategory" (the one whose tabs are actually open
+// in the browser). Clicking a pill changes viewedCategory; the Switch button
+// changes activeCategory.
+let viewedCategory = null;
+
+// Cached full state for quick re-renders without messaging bg.js
+let cachedState = null;
+
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   loadAndRender();
@@ -15,9 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadAndRender() {
   try {
     const state = await chrome.runtime.sendMessage({ action: 'GET_STATE' });
+    cachedState = state;
+
+    // Default viewedCategory to activeCategory on first load
+    if (!viewedCategory || !state.categories[viewedCategory]) {
+      viewedCategory = state.activeCategory;
+    }
+
     renderCategories(state.categories, state.activeCategory);
-    renderTabList(state.categories?.[state.activeCategory] || []);
-    updateActiveTitle(state.activeCategory);
+    renderTabList(state.categories?.[viewedCategory] || [], viewedCategory === state.activeCategory);
+    updateHeader(viewedCategory, state.activeCategory);
+    updateSwitchBar(viewedCategory, state.activeCategory);
   } catch (err) {
     console.error('[TabGrove panel] Failed to load state:', err);
   }
@@ -33,10 +50,15 @@ function renderCategories(categories, activeCategory) {
     btn.className = 'category-pill';
     btn.textContent = name;
     btn.dataset.category = name;
-    btn.setAttribute('aria-pressed', name === activeCategory);
-    btn.classList.toggle('active', name === activeCategory);
 
-    btn.addEventListener('click', () => switchCategory(name));
+    // "active" class = the category whose tabs are open in the browser
+    btn.classList.toggle('active', name === activeCategory);
+    // "viewing" class = the category currently displayed in the panel
+    btn.classList.toggle('viewing', name === viewedCategory);
+    btn.setAttribute('aria-pressed', name === viewedCategory);
+
+    // Clicking a pill only changes which tabs are SHOWN — no switch
+    btn.addEventListener('click', () => viewCategory(name));
 
     // Delete button (not shown for active category)
     if (name !== activeCategory) {
@@ -51,12 +73,18 @@ function renderCategories(categories, activeCategory) {
       btn.appendChild(del);
     }
 
+    // Tab count indicator on the pill
+    const count = document.createElement('span');
+    count.className = 'pill-tab-count';
+    count.textContent = (categories[name] || []).length;
+    btn.appendChild(count);
+
     nav.appendChild(btn);
   }
 }
 
 // ─── Tab List Rendering ───────────────────────────────────────────────────────
-function renderTabList(tabs) {
+function renderTabList(tabs, isActive) {
   const list = document.getElementById('tab-list');
   const empty = document.getElementById('empty-state');
   const badge = document.getElementById('tab-count-badge');
@@ -66,6 +94,9 @@ function renderTabList(tabs) {
 
   if (tabs.length === 0) {
     empty.hidden = false;
+    empty.textContent = isActive
+      ? 'No tabs in this category yet.'
+      : 'No saved tabs in this category.';
     return;
   }
   empty.hidden = true;
@@ -74,6 +105,11 @@ function renderTabList(tabs) {
     const li = document.createElement('li');
     li.className = 'tab-item';
     li.dataset.tabId = tab.tabId;
+
+    // Inactive category tabs get dimmed styling
+    if (!isActive) {
+      li.classList.add('inactive');
+    }
 
     const favicon = document.createElement('img');
     favicon.className = 'tab-favicon';
@@ -85,20 +121,62 @@ function renderTabList(tabs) {
     title.className = 'tab-title';
     title.textContent = tab.title || tab.url || 'Untitled';
 
-    li.appendChild(favicon);
-    li.appendChild(title);
+    // URL hint for inactive tabs (shows domain)
+    const urlHint = document.createElement('span');
+    urlHint.className = 'tab-url-hint';
+    try {
+      urlHint.textContent = new URL(tab.url).hostname;
+    } catch {
+      urlHint.textContent = '';
+    }
 
-    // Click tab item → focus the tab in browser
-    li.addEventListener('click', () => {
-      if (tab.tabId) chrome.tabs.update(tab.tabId, { active: true });
-    });
+    li.appendChild(favicon);
+    const textWrap = document.createElement('div');
+    textWrap.className = 'tab-text-wrap';
+    textWrap.appendChild(title);
+    if (!isActive && urlHint.textContent) {
+      textWrap.appendChild(urlHint);
+    }
+    li.appendChild(textWrap);
+
+    // Click tab → focus it in browser (only for active category)
+    if (isActive && tab.tabId) {
+      li.addEventListener('click', () => {
+        chrome.tabs.update(tab.tabId, { active: true });
+      });
+    }
 
     list.appendChild(li);
   }
 }
 
-function updateActiveTitle(name) {
-  document.getElementById('active-category-title').textContent = name || '—';
+// ─── Header & Switch Bar ─────────────────────────────────────────────────────
+function updateHeader(viewed, active) {
+  document.getElementById('active-category-title').textContent = viewed || '—';
+  const activeBadge = document.getElementById('active-badge');
+  activeBadge.hidden = viewed !== active;
+}
+
+function updateSwitchBar(viewed, active) {
+  const bar = document.getElementById('switch-bar');
+  if (viewed === active) {
+    bar.hidden = true;
+    return;
+  }
+  bar.hidden = false;
+  document.getElementById('switch-bar-name').textContent = viewed;
+}
+
+// ─── View a Category (preview only — no switch) ──────────────────────────────
+function viewCategory(name) {
+  viewedCategory = name;
+  if (cachedState) {
+    // Fast re-render from cache — no bg.js round trip
+    renderCategories(cachedState.categories, cachedState.activeCategory);
+    renderTabList(cachedState.categories?.[name] || [], name === cachedState.activeCategory);
+    updateHeader(name, cachedState.activeCategory);
+    updateSwitchBar(name, cachedState.activeCategory);
+  }
 }
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -107,6 +185,7 @@ async function switchCategory(name) {
   setLoading(true);
   try {
     await chrome.runtime.sendMessage({ action: 'SWITCH_CATEGORY', name });
+    viewedCategory = name; // After switch, view the newly active category
     await loadAndRender();
   } finally {
     setLoading(false);
@@ -120,6 +199,10 @@ async function deleteCategory(name) {
     alert(res.error);
     return;
   }
+  // If we were viewing the deleted category, snap back to active
+  if (viewedCategory === name) {
+    viewedCategory = cachedState?.activeCategory || null;
+  }
   await loadAndRender();
 }
 
@@ -131,6 +214,7 @@ async function closeTab(tabId) {
 
 // ─── UI Event Bindings ────────────────────────────────────────────────────────
 function bindUIEvents() {
+  // New category button
   document.getElementById('btn-new-category').addEventListener('click', async () => {
     const name = prompt('Enter category name:')?.trim();
     if (!name) return;
@@ -140,6 +224,13 @@ function bindUIEvents() {
       return;
     }
     await loadAndRender();
+  });
+
+  // Switch button — the explicit "switch to these tabs" action
+  document.getElementById('btn-switch-category').addEventListener('click', () => {
+    if (viewedCategory) {
+      switchCategory(viewedCategory);
+    }
   });
 }
 

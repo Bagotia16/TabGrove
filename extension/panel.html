@@ -21,11 +21,25 @@
     <!-- Category Pills -->
     <nav id="category-list" aria-label="Tab categories"></nav>
 
-    <!-- Active Category's Tab List -->
+    <!-- Switch Action Bar (visible when viewing inactive category) -->
+    <div id="switch-bar" hidden>
+      <div id="switch-bar-info">
+        <span id="switch-bar-icon">👁</span>
+        <span id="switch-bar-text">Previewing <strong id="switch-bar-name"></strong></span>
+      </div>
+      <button id="btn-switch-category">
+        <span>⚡</span> Switch to these tabs
+      </button>
+    </div>
+
+    <!-- Tab List (shows viewed category's tabs) -->
     <section id="tab-list-section">
       <div id="tab-list-header">
         <h2 id="active-category-title">—</h2>
-        <span id="tab-count-badge">0 tabs</span>
+        <div id="tab-list-header-right">
+          <span id="active-badge" hidden>Active</span>
+          <span id="tab-count-badge">0 tabs</span>
+        </div>
       </div>
       <ul id="tab-list" role="list"></ul>
       <p id="empty-state" hidden>No tabs in this category yet.</p>

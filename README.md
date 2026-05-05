@@ -207,7 +207,10 @@ Or paste the contents of `lib/reset_storage.js`.
 - [ ] Tab search across all categories
 - [ ] Keyboard shortcuts for category switching
 - [ ] Chrome Web Store release
-
+- [optional] add a search bar in the side panel to search through tabs
+- [optional] add moving between tabs and closing and opening of tabs from the side panel
+ 
+ 
 ---
 
 ## 🤝 Contributing

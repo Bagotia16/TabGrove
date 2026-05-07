@@ -135,6 +135,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function handleUIMessage(message) {
   switch (message.action) {
     case 'CREATE_CATEGORY':     return await createCategory(message.name);
+    case 'RENAME_CATEGORY':     return await renameCategory(message.oldName, message.newName);
     case 'DELETE_CATEGORY':     return await deleteCategory(message.name);
     case 'SWITCH_CATEGORY':     return await switchToCategory(message.name);
     case 'MOVE_TAB':            return await moveTabToCategory(message.tabId, message.category);

@@ -76,17 +76,24 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 });
 
 // ─── Tab Events ──────────────────────────────────────────────────────────────
+
+// Tracks tabs whose onCreated handler hasn't finished yet.
+// onUpdated checks this to avoid dropping updates for tabs not yet in storage.
+const _pendingCreations = new Set();
+
 chrome.tabs.onCreated.addListener(async (tab) => {
-  // Skip registration entirely during a category switch — new tabs being
-  // opened by switchToCategory should NOT be added to the active category here;
-  // switchToCategory saves them correctly itself.
   if (_isSwitching) return;
-  // Race-condition guard: wait briefly then re-query for fresh metadata
-  // (at creation time, url/title are often empty)
-  await new Promise(r => setTimeout(r, 500));
-  const fresh = await chrome.tabs.get(tab.id).catch(() => null);
-  if (!fresh) return;
-  await addTabToActiveCategory(fresh);
+  _pendingCreations.add(tab.id);
+  try {
+    // Wait briefly then re-query for fresh metadata
+    // (at creation time, url/title are often empty)
+    await new Promise(r => setTimeout(r, 500));
+    const fresh = await chrome.tabs.get(tab.id).catch(() => null);
+    if (!fresh) return;
+    await addTabToActiveCategory(fresh);
+  } finally {
+    _pendingCreations.delete(tab.id);
+  }
 });
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
@@ -96,9 +103,20 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (_isSwitching) return;
-  // Update on URL change OR page load completion — whichever comes first.
-  // This ensures the side panel reflects navigations immediately.
   if (changeInfo.url || changeInfo.title || changeInfo.status === 'complete') {
+    // If onCreated hasn't finished adding this tab to storage yet, wait for it.
+    // Without this, updateTabMetadata silently drops the update because the tab
+    // entry doesn't exist yet — leaving the panel stuck on "New Tab".
+    if (_pendingCreations.has(tabId)) {
+      await new Promise(resolve => {
+        const start = Date.now();
+        const check = () => {
+          if (!_pendingCreations.has(tabId) || Date.now() - start > 2000) return resolve();
+          setTimeout(check, 50);
+        };
+        check();
+      });
+    }
     await updateTabMetadata(tabId, {
       url: safeUrl(tab.url),
       title: tab.title || 'New Tab',
@@ -142,16 +160,27 @@ async function syncStateFromStorage() {
 async function addTabToActiveCategory(tab) {
   const { categories, activeCategory } = await Storage.getFullState();
   if (!categories[activeCategory]) return;
-  // Skip system tabs entirely
   if (isSystemTab(tab.url)) return;
   const already = categories[activeCategory].find(t => t.tabId === tab.id);
   if (already) return;
-  categories[activeCategory].push({
+
+  const entry = {
     tabId: tab.id,
     url: safeUrl(tab.url),
     title: tab.title || 'New Tab',
     favIconUrl: tab.favIconUrl || ''
-  });
+  };
+
+  // Replace a placeholder "New Tab" entry (tabId: null) instead of creating a duplicate.
+  const placeholderIdx = categories[activeCategory].findIndex(
+    t => t.tabId === null && (t.url === 'chrome://newtab' || t.url === 'chrome://new-tab-page')
+  );
+  if (placeholderIdx !== -1) {
+    categories[activeCategory][placeholderIdx] = entry;
+  } else {
+    categories[activeCategory].push(entry);
+  }
+
   await Storage.saveCategories(categories);
 }
 

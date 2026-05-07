@@ -118,6 +118,7 @@ async function handleUIMessage(message) {
   switch (message.action) {
     case 'CREATE_CATEGORY':     return await createCategory(message.name);
     case 'DELETE_CATEGORY':     return await deleteCategory(message.name);
+    case 'RENAME_CATEGORY':    return await renameCategory(message.oldName, message.newName);
     case 'SWITCH_CATEGORY':     return await switchToCategory(message.name);
     case 'MOVE_TAB':            return await moveTabToCategory(message.tabId, message.category);
     case 'CLOSE_CATEGORY_TABS': return await closeCategoryTabs(message.name);
@@ -189,6 +190,32 @@ async function deleteCategory(name) {
   if (name === activeCategory) return { error: 'Cannot delete the active category' };
   delete categories[name];
   await Storage.saveCategories(categories);
+  return { success: true };
+}
+
+async function renameCategory(oldName, newName) {
+  if (!newName || !newName.trim()) return { error: 'Category name cannot be empty' };
+  newName = newName.trim();
+  if (oldName === newName) return { success: true };
+
+  const { categories, activeCategory } = await Storage.getFullState();
+  if (!categories[oldName]) return { error: 'Category not found' };
+  if (categories[newName]) return { error: 'A category with that name already exists' };
+
+  // Rebuild the object preserving key order
+  const updated = {};
+  for (const key of Object.keys(categories)) {
+    if (key === oldName) {
+      updated[newName] = categories[oldName];
+    } else {
+      updated[key] = categories[key];
+    }
+  }
+  await Storage.saveCategories(updated);
+
+  if (activeCategory === oldName) {
+    await Storage.setActiveCategory(newName);
+  }
   return { success: true };
 }
 

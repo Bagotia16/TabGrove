@@ -166,6 +166,24 @@ html, body {
   color: var(--accent);
 }
 
+/* Inline rename input inside pill */
+.rename-input {
+  background: var(--surface-3);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font);
+  padding: 1px 6px;
+  width: 100px;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(82, 196, 122, 0.2);
+}
+.rename-input::selection {
+  background: var(--accent-dim);
+}
+
 .category-delete {
   display: inline-flex;
   align-items: center;

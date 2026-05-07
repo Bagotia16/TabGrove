@@ -60,6 +60,12 @@ function renderCategories(categories, activeCategory) {
     // Clicking a pill only changes which tabs are SHOWN — no switch
     btn.addEventListener('click', () => viewCategory(name));
 
+    // Double-click to rename
+    btn.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      startInlineRename(btn, name);
+    });
+
     // Delete button (not shown for active category)
     if (name !== activeCategory) {
       const del = document.createElement('button');
@@ -177,6 +183,57 @@ function viewCategory(name) {
     updateHeader(name, cachedState.activeCategory);
     updateSwitchBar(name, cachedState.activeCategory);
   }
+}
+
+// ─── Inline Rename ───────────────────────────────────────────────────────────
+function startInlineRename(pill, oldName) {
+  if (pill.querySelector('.rename-input')) return;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'rename-input';
+  input.value = oldName;
+
+  const deleteBtn = pill.querySelector('.category-delete');
+  const countBadge = pill.querySelector('.pill-tab-count');
+  pill.textContent = '';
+  pill.appendChild(input);
+  if (deleteBtn) pill.appendChild(deleteBtn);
+  if (countBadge) pill.appendChild(countBadge);
+
+  input.focus();
+  input.select();
+
+  const commit = () => commitRename(input, oldName);
+  const cancel = () => loadAndRender();
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+  });
+  input.addEventListener('blur', commit);
+  input.addEventListener('click', (e) => e.stopPropagation());
+}
+
+async function commitRename(input, oldName) {
+  if (input.dataset.committed) return;
+  input.dataset.committed = 'true';
+
+  const newName = input.value.trim();
+  if (!newName || newName === oldName) {
+    loadAndRender();
+    return;
+  }
+  const res = await chrome.runtime.sendMessage({ action: 'RENAME_CATEGORY', oldName, newName });
+  if (res?.error) {
+    alert(res.error);
+    input.dataset.committed = '';
+    input.focus();
+    input.select();
+    return;
+  }
+  if (viewedCategory === oldName) viewedCategory = newName;
+  await loadAndRender();
 }
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
